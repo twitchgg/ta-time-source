@@ -12,23 +12,28 @@ type WSHandler struct {
 	Handler WSHandlerFunc
 }
 type WebsocketService struct {
-	conf *Config
+	conf           *Config
+	SessionManager *SessionManager
 }
 
 func NewWebsocketService(conf *Config) (*WebsocketService, error) {
+	sm := SessionManager{
+		sessions: make([]*Session, 0),
+	}
 	return &WebsocketService{
-		conf: conf,
+		conf:           conf,
+		SessionManager: &sm,
 	}, nil
 }
 
-func (wss *WebsocketService) Start(handlers ...WSHandler) chan error {
+func (wss *WebsocketService) Start(handlers []*WSHandler) chan error {
 	errChan := make(chan error, 1)
 	for _, handler := range handlers {
 		http.HandleFunc(handler.Path, handler.Handler)
 	}
 	go func() {
 		logrus.WithField("prefix", "ws").
-			Debugf("start http ws server with: %s", wss.conf.BindAddr)
+			Infof("start http ws server with: %s", wss.conf.BindAddr)
 		if err := http.ListenAndServe(wss.conf.BindAddr, nil); err != nil {
 			errChan <- err
 		}

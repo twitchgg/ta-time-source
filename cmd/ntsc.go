@@ -12,6 +12,7 @@ var srcEnvs struct {
 	gpSerialPath string
 	gbSerialPath string
 	rpcListener  string
+	wsListener   string
 	counterAddr  string
 }
 var srcCmd = &cobra.Command{
@@ -35,6 +36,9 @@ func init() {
 	srcCmd.Flags().StringVar(&srcEnvs.rpcListener,
 		"rpc-listener", "tcp://0.0.0.0:1358",
 		"common view data rpc listener")
+	srcCmd.Flags().StringVar(&srcEnvs.wsListener,
+		"ws-listener", "0.0.0.0:8788",
+		"ws service listener")
 	srcCmd.Flags().StringVar(&srcEnvs.counterAddr,
 		"counter-addr", "192.168.1.94:45454",
 		"multiple channel couner address")
@@ -54,6 +58,7 @@ func _src_run(cmd *cobra.Command, args []string) {
 		},
 		CertPath:    envs.certPath,
 		RPCListener: srcEnvs.rpcListener,
+		WSListener:  srcEnvs.wsListener,
 	})
 	if err != nil {
 		logrus.WithField("prefix", "cmd.root").

@@ -28,6 +28,25 @@ func (t TimeStatus) String() string {
 
 type SessionType int
 
+func (t TimeType) String() string {
+	switch t {
+	case GPSTimeType:
+		return "GPS时间"
+	case BDTimeType:
+		return "北斗时间"
+	case BJTimeType:
+		return "北京时间"
+	default:
+		return "未知时间"
+	}
+}
+
+const (
+	GPSTimeType TimeType = iota
+	BDTimeType
+	BJTimeType
+)
+
 const (
 	SessionTypeTime SessionType = iota
 	SessionTypeTimeStatus
@@ -45,6 +64,18 @@ type Session struct {
 	isClose    bool
 }
 
+func (s *Session) Addr() string {
+	return s.addr
+}
+
+func (s *Session) Error() error {
+	return s.err
+}
+
+func (s *Session) IsClose() bool {
+	return s.isClose
+}
+
 func (s *Session) WaitForClose() {
 	go func() {
 		for {
@@ -58,12 +89,15 @@ func (s *Session) WaitForClose() {
 	switch s.st {
 	case SessionTypeTime:
 		for t := range s.timeChan {
+			logrus.WithField("prefix", "ws").
+				Tracef("read [%s] time:  %s", s.tt.String(), t)
 			if s.isClose {
 				return
 			}
 			if err := s.wsConn.WriteMessage(websocket.TextMessage, []byte(t)); err != nil {
 				s.err = err
-				logrus.WithField("prefix", "session.wait_for_close").Warnf("client failed: %s", err.Error())
+				logrus.WithField("prefix", "ws").
+					Warnf("client failed: %s", err.Error())
 				s.Close()
 				return
 			}
@@ -117,9 +151,8 @@ func (m *SessionManager) Start(tt TimeType, w http.ResponseWriter, r *http.Reque
 		s = &Session{
 			addr:   addr,
 			wsConn: wsConn,
-			// timeChan: make(chan string),
-			tt: tt,
-			st: st,
+			tt:     tt,
+			st:     st,
 		}
 		if st == SessionTypeTime {
 			s.timeChan = make(chan string)
@@ -128,6 +161,8 @@ func (m *SessionManager) Start(tt TimeType, w http.ResponseWriter, r *http.Reque
 			s.timeStatus = make(chan TimeStatus)
 		}
 		m.sessions = append(m.sessions, s)
+		logrus.WithField("prefix", "ws").
+			Infof("create ws session [%s] time type [%s]", s.addr, tt.String())
 	}
 	return s, nil
 }

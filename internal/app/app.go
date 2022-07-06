@@ -11,6 +11,7 @@ import (
 	"ntsc.ac.cn/ta-time-source/pkg/counter"
 	"ntsc.ac.cn/ta-time-source/pkg/cv"
 	"ntsc.ac.cn/ta-time-source/pkg/sreceiver"
+	"ntsc.ac.cn/ta-time-source/pkg/ws"
 )
 
 type TimeSourceApp struct {
@@ -22,6 +23,9 @@ type TimeSourceApp struct {
 	rpcServer      *rpc.Server
 	userCVSessions []*userCVSession
 	snmp           *gosnmp.GoSNMP
+
+	wss   *ws.WebsocketService
+	wssSM *ws.SessionManager
 }
 
 func NewTimeSourceApp(conf *Config) (*TimeSourceApp, error) {
@@ -70,7 +74,14 @@ func NewTimeSourceApp(conf *Config) (*TimeSourceApp, error) {
 		return nil, fmt.Errorf("create grpc server failed: %v", err)
 	}
 	app.rpcServer = rpcServ
-
+	wss, err := ws.NewWebsocketService(&ws.Config{
+		BindAddr: conf.WSListener,
+	})
+	app.wssSM = wss.SessionManager
+	if err != nil {
+		return nil, err
+	}
+	app.wss = wss
 	return &app, nil
 }
 
@@ -98,6 +109,29 @@ func (tsa *TimeSourceApp) Start() chan error {
 	}()
 	tsa._startCounter(errChan)
 	tsa._startSReceiver(errChan)
-
+	go func() {
+		err := <-tsa.wss.Start([]*ws.WSHandler{
+			{Path: "/time/gps", Handler: tsa.wsGPSTimerHandler},
+			{Path: "/time/bd", Handler: tsa.wsBDTimerHandler},
+			{Path: "/time/bj", Handler: tsa.wsBJTimerHandler},
+		})
+		errChan <- err
+	}()
+	go tsa._startPushTime(tsa.gpReceiver.TimeChan(), ws.GPSTimeType)
+	go tsa._startPushTime(tsa.gbReceiver.TimeChan(), ws.BDTimeType)
 	return errChan
+}
+
+func (tsa *TimeSourceApp) _startPushTime(timeChan chan string, tt ws.TimeType) {
+	for secondTime := range timeChan {
+		for _, se := range tsa.wssSM.FindByTimeType(tt, ws.SessionTypeTime) {
+			if se.Error() != nil || se.IsClose() {
+				logrus.WithField("prefix", "service.ws").
+					Infof("close session [%s]: %v", se.Addr(), se.Error())
+				tsa.wssSM.Remove(se.Addr())
+				continue
+			}
+			se.PushTime(secondTime)
+		}
+	}
 }

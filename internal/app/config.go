@@ -6,6 +6,7 @@ type Config struct {
 	CounerConfig *MultipleCounterConfig
 	CertPath     string
 	RPCListener  string
+	WSListener   string
 }
 type CommonViewDeviceConfig struct {
 	SerialPath string

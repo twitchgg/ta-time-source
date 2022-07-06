@@ -1,5 +1,6 @@
 package ws
 
 type Config struct {
-	BindAddr string
+	BindAddr   string
+	WSListener string
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"ntsc.ac.cn/ta-registry/pkg/pb"
 	"ntsc.ac.cn/ta-registry/pkg/rpc"
-	"ntsc.ac.cn/ta-time-source/pkg/ws"
 )
 
 type DataService struct {
@@ -18,7 +17,6 @@ type DataService struct {
 	cvMainDataClient pb.CommonViewDataService_PushMainStationDataClient
 	machineID        string
 	tcpSessions      []*tcpSession
-	wss              *ws.WebsocketService
 }
 
 func NewDataService(conf *Config) (*DataService, error) {
@@ -44,18 +42,12 @@ func NewDataService(conf *Config) (*DataService, error) {
 		return nil, fmt.Errorf(
 			"dial management grpc connection failed: %v", err)
 	}
-	wss, err := ws.NewWebsocketService(&ws.Config{
-		BindAddr: conf.WSListener,
-	})
-	if err != nil {
-		return nil, err
-	}
+
 	return &DataService{
 		conf:            conf,
 		machineID:       machineID,
 		cvServiceClient: pb.NewCommonViewDataServiceClient(conn),
 		tcpSessions:     make([]*tcpSession, 0),
-		wss:             wss,
 	}, nil
 }
 
@@ -119,9 +111,6 @@ func (ds *DataService) Start() chan error {
 			logrus.WithField("prefix", "service.rpc").Infof("create tcp client: %s", conn.RemoteAddr())
 		}
 	}()
-	go func() {
-		err := <-ds.wss.Start()
-		errChan <- err
-	}()
+
 	return errChan
 }
