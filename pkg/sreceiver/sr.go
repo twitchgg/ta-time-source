@@ -22,6 +22,7 @@ type SatelliteReceiver struct {
 	msgChan    chan serialData
 	sp         io.ReadWriteCloser
 	timeChan   chan string
+	prefix     string
 }
 
 func NewDevice(path string) (*SatelliteReceiver, error) {
@@ -40,6 +41,7 @@ func NewDevice(path string) (*SatelliteReceiver, error) {
 }
 
 func (d *SatelliteReceiver) Open(prefix string) chan error {
+	d.prefix = prefix
 	errChan := make(chan error, 1)
 	var err error
 	if d.sp, err = serial.Open(d.opts); err != nil {
@@ -61,7 +63,7 @@ func (d *SatelliteReceiver) Open(prefix string) chan error {
 				continue
 			}
 			logrus.WithField("prefix", "cv.device.open").
-				Tracef("read [%s/%s] data: %s", d.serialPath, prefix, line)
+				Tracef("read [%s | %s] data: %s", d.serialPath, prefix, line)
 			srcData := serialData{
 				Data: strings.Split(line, ","),
 				Raw:  []byte(line),
@@ -109,7 +111,8 @@ func (d *SatelliteReceiver) ReadTime(errChan chan error) {
 				continue
 			}
 			t1Data := fmt.Sprintf("%0.2d:%0.2d:%0.2d", t1.Hour(), t1.Minute(), t1.Second())
-			fmt.Println(t1Data)
+			logrus.WithField("prefix", "cv.device.read").
+				Tracef("dev [%s] time data: %s", d.prefix, t1Data)
 		}
 	}()
 }
