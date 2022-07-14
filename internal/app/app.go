@@ -6,12 +6,12 @@ import (
 	"github.com/gosnmp/gosnmp"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
-	"ntsc.ac.cn/ta-registry/pkg/pb"
-	rpc "ntsc.ac.cn/ta-registry/pkg/rpc"
 	"ntsc.ac.cn/ta-time-source/pkg/counter"
 	"ntsc.ac.cn/ta-time-source/pkg/cv"
 	"ntsc.ac.cn/ta-time-source/pkg/sreceiver"
 	"ntsc.ac.cn/ta-time-source/pkg/ws"
+	"ntsc.ac.cn/tas/tas-commons/pkg/pb"
+	rpc "ntsc.ac.cn/tas/tas-commons/pkg/rpc"
 )
 
 type TimeSourceApp struct {

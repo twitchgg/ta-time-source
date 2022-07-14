@@ -3,8 +3,8 @@ package app
 import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
-	"ntsc.ac.cn/ta-registry/pkg/pb"
-	rpc "ntsc.ac.cn/ta-registry/pkg/rpc"
+	"ntsc.ac.cn/tas/tas-commons/pkg/pb"
+	rpc "ntsc.ac.cn/tas/tas-commons/pkg/rpc"
 )
 
 type userCVSession struct {

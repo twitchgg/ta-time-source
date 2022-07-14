@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	ccmd "ntsc.ac.cn/ta-registry/pkg/cmd"
+	ccmd "ntsc.ac.cn/tas/tas-commons/pkg/cmd"
 )
 
 var envs struct {
