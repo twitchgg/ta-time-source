@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/denisbrodbeck/machineid v1.0.1
+	github.com/elastic/go-elasticsearch/v8 v8.3.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/gosnmp/gosnmp v1.35.0
 	github.com/jacobsa/go-serial v0.0.0-20180131005756-15cf729a72d4
@@ -12,6 +13,8 @@ require (
 	github.com/spf13/viper v1.12.0
 	ntsc.ac.cn/tas/tas-commons v0.0.0
 )
+
+require github.com/elastic/elastic-transport-go/v8 v8.0.0-20211216131617-bbee439d559c // indirect
 
 require (
 	github.com/coreos/go-semver v0.3.0 // indirect

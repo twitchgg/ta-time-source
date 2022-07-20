@@ -6,6 +6,7 @@ import (
 	"net"
 
 	"github.com/denisbrodbeck/machineid"
+	es "github.com/elastic/go-elasticsearch/v8"
 	"github.com/sirupsen/logrus"
 	"ntsc.ac.cn/tas/tas-commons/pkg/pb"
 	"ntsc.ac.cn/tas/tas-commons/pkg/rpc"
@@ -17,6 +18,7 @@ type DataService struct {
 	cvMainDataClient pb.CommonViewDataService_PushMainStationDataClient
 	machineID        string
 	tcpSessions      []*tcpSession
+	esCluster        *es.Client
 }
 
 func NewDataService(conf *Config) (*DataService, error) {
