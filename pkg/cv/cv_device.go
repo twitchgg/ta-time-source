@@ -10,6 +10,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	// DefaultCVHeaderSize default serial port data header size
+	DefaultCVHeaderSize = 7
+	// DefaultSatelliteDataSize default satellite data size
+	DefaultSatelliteDataSize = 24
+)
+
 type Device struct {
 	serialPath string
 	opts       serial.OpenOptions

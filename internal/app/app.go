@@ -2,7 +2,9 @@ package app
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/denisbrodbeck/machineid"
 	"github.com/gosnmp/gosnmp"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -12,6 +14,8 @@ import (
 	"ntsc.ac.cn/ta-time-source/pkg/ws"
 	"ntsc.ac.cn/tas/tas-commons/pkg/pb"
 	rpc "ntsc.ac.cn/tas/tas-commons/pkg/rpc"
+
+	es "github.com/elastic/go-elasticsearch/v7"
 )
 
 type TimeSourceApp struct {
@@ -26,9 +30,16 @@ type TimeSourceApp struct {
 
 	wss   *ws.WebsocketService
 	wssSM *ws.SessionManager
+
+	esCluster *es.Client
+	machineID string
 }
 
 func NewTimeSourceApp(conf *Config) (*TimeSourceApp, error) {
+	machineID, err := machineid.ID()
+	if err != nil {
+		return nil, fmt.Errorf("generate machine id failed: %v", err)
+	}
 	cvDev, err := cv.NewDevice(conf.CVConfig.SerialPath)
 	if err != nil {
 		return nil, err
@@ -51,6 +62,7 @@ func NewTimeSourceApp(conf *Config) (*TimeSourceApp, error) {
 	snmpConf.Port = 1169
 	app := TimeSourceApp{
 		conf:           conf,
+		machineID:      machineID,
 		cv:             cvDev,
 		gpReceiver:     gpDev,
 		gbReceiver:     gbDev,
@@ -82,11 +94,19 @@ func NewTimeSourceApp(conf *Config) (*TimeSourceApp, error) {
 		return nil, err
 	}
 	app.wss = wss
+	if app.esCluster, err = es.NewClient(es.Config{
+		Addresses: conf.ESConf.GetEndpoints(),
+	}); err != nil {
+		return nil, fmt.Errorf(
+			"failed to create elastic search client: %v", err)
+	}
 	return &app, nil
 }
 
 func (tsa *TimeSourceApp) Start() chan error {
 	errChan := make(chan error, 1)
+
+	go tsa._startES(errChan)
 	go func() {
 		err := <-tsa.rpcServer.Start()
 		errChan <- err
@@ -100,9 +120,14 @@ func (tsa *TimeSourceApp) Start() chan error {
 	go func() {
 		tsa.cv.ReadMsg(errChan, func(raw []byte, data []string) error {
 			logrus.WithField("prefix", "service.cv").
-				Debugf("read common view data size [%d],session size [%d]", len(raw), len(tsa.userCVSessions))
+				Debugf("read common view data size [%d],session size [%d]",
+					len(raw), len(tsa.userCVSessions))
 			for _, session := range tsa.userCVSessions {
 				session.dataChan <- raw
+			}
+			if err := tsa.process(raw, data); err != nil {
+				logrus.WithField("prefix", "service.cv").
+					Errorf("failed to save common view data [%v]", err)
 			}
 			return nil
 		})
@@ -133,5 +158,36 @@ func (tsa *TimeSourceApp) _startPushTime(timeChan chan string, tt ws.TimeType) {
 			}
 			se.PushTime(secondTime)
 		}
+	}
+}
+
+func (tsa *TimeSourceApp) _startES(errChan chan error) {
+	logrus.WithField("prefix", "cv.service.start").
+		Infof("elastic search cluster endpoints: %s",
+			tsa.conf.ESConf.GetEndpoints())
+	resp, err := tsa.esCluster.Info()
+	if err != nil {
+		errChan <- err
+		return
+	}
+	logrus.WithField("prefix", "cv.service.start").
+		Infof("elastic search cluster info: %s", resp)
+	resp, err = tsa.esCluster.Indices.Exists(
+		[]string{tsa.conf.ESConf.IndexName})
+	if err != nil {
+		errChan <- err
+		return
+	}
+	if resp.StatusCode == 404 {
+		r := tsa.esCluster.Indices.Create.
+			WithBody(strings.NewReader(esIndexMapping))
+		if _, err = tsa.esCluster.Indices.Create(
+			tsa.conf.ESConf.IndexName, r); err != nil {
+			errChan <- err
+			return
+		}
+		logrus.WithField("prefix", "cv.service.start").
+			Infof("create elastic search index: %s",
+				tsa.conf.ESConf.IndexName)
 	}
 }

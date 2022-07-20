@@ -14,6 +14,8 @@ var srcEnvs struct {
 	rpcListener  string
 	wsListener   string
 	counterAddr  string
+	esEndpoints  string
+	esIndex      string
 }
 var srcCmd = &cobra.Command{
 	Use:    "ntsc",
@@ -42,12 +44,23 @@ func init() {
 	srcCmd.Flags().StringVar(&srcEnvs.counterAddr,
 		"counter-addr", "192.168.1.94:45454",
 		"multiple channel couner address")
+	srcCmd.Flags().StringVar(&srcEnvs.esEndpoints,
+		"es-endpoints",
+		"http://10.0.23.104:9200,http://10.0.23.105:9200,http://10.0.23.106:9200",
+		"elasticsearch cluster endpoints")
+	srcCmd.Flags().StringVar(&srcEnvs.esIndex,
+		"es-index", "cv_data",
+		"elasticsearch common view data index name")
 }
 
 func _src_run(cmd *cobra.Command, args []string) {
 	s, err := app.NewTimeSourceApp(&app.Config{
 		CVConfig: &app.CommonViewDeviceConfig{
 			SerialPath: srcEnvs.cvSerialPath,
+		},
+		ESConf: &app.ElasticSearchConfig{
+			Endpoints: srcEnvs.esEndpoints,
+			IndexName: srcEnvs.esIndex,
 		},
 		SRConfig: &app.SatelliteReceiverConfig{
 			GPSSerialPath: srcEnvs.gpSerialPath,
@@ -88,6 +101,16 @@ func _src_prerun(cmd *cobra.Command, args []string) {
 	}
 	if err = ccmd.ValidateStringVar(&envs.certPath,
 		"cert_path", true); err != nil {
+		logrus.WithField("prefix", "cmd.root").
+			Fatalf("check boot var failed: %s", err.Error())
+	}
+	if err = ccmd.ValidateStringVar(&srcEnvs.esEndpoints,
+		"es_endpoints", true); err != nil {
+		logrus.WithField("prefix", "cmd.root").
+			Fatalf("check boot var failed: %s", err.Error())
+	}
+	if err = ccmd.ValidateStringVar(&srcEnvs.esIndex,
+		"es_index", true); err != nil {
 		logrus.WithField("prefix", "cmd.root").
 			Fatalf("check boot var failed: %s", err.Error())
 	}

@@ -6,7 +6,6 @@ import (
 	"net"
 
 	"github.com/denisbrodbeck/machineid"
-	es "github.com/elastic/go-elasticsearch/v8"
 	"github.com/sirupsen/logrus"
 	"ntsc.ac.cn/tas/tas-commons/pkg/pb"
 	"ntsc.ac.cn/tas/tas-commons/pkg/rpc"
@@ -18,7 +17,6 @@ type DataService struct {
 	cvMainDataClient pb.CommonViewDataService_PushMainStationDataClient
 	machineID        string
 	tcpSessions      []*tcpSession
-	esCluster        *es.Client
 }
 
 func NewDataService(conf *Config) (*DataService, error) {
@@ -64,7 +62,6 @@ func (ds *DataService) Start() chan error {
 			"failed to create common view data service client: %v", err)
 		return errChan
 	}
-
 	go func() {
 		for {
 			reply, err := ds.cvMainDataClient.Recv()
@@ -113,6 +110,5 @@ func (ds *DataService) Start() chan error {
 			logrus.WithField("prefix", "service.rpc").Infof("create tcp client: %s", conn.RemoteAddr())
 		}
 	}()
-
 	return errChan
 }
