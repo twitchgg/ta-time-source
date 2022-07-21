@@ -12,4 +12,5 @@ func init() {
 	logrus.SetLevel(logrus.TraceLevel)
 	formatter := new(prefixed.TextFormatter)
 	logrus.SetFormatter(formatter)
+
 }

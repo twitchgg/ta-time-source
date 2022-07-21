@@ -16,6 +16,7 @@ var srcEnvs struct {
 	counterAddr  string
 	esEndpoints  string
 	esIndex      string
+	cvID         string
 }
 var srcCmd = &cobra.Command{
 	Use:    "ntsc",
@@ -51,12 +52,16 @@ func init() {
 	srcCmd.Flags().StringVar(&srcEnvs.esIndex,
 		"es-index", "cv_data",
 		"elasticsearch common view data index name")
+	srcCmd.Flags().StringVar(&srcEnvs.cvID,
+		"cv-id", "main",
+		"common view device id")
 }
 
 func _src_run(cmd *cobra.Command, args []string) {
 	s, err := app.NewTimeSourceApp(&app.Config{
 		CVConfig: &app.CommonViewDeviceConfig{
 			SerialPath: srcEnvs.cvSerialPath,
+			DevID:      srcEnvs.cvID,
 		},
 		ESConf: &app.ElasticSearchConfig{
 			Endpoints: srcEnvs.esEndpoints,

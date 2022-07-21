@@ -157,7 +157,7 @@ func (tsa *TimeSourceApp) process(raw []byte, data []string) error {
 		idx = idx + cv.DefaultSatelliteDataSize
 		var adata []interface{}
 		adata = append(adata, tnano)
-		adata = append(adata, tsa.machineID)
+		adata = append(adata, tsa.conf.CVConfig.DevID)
 		adata = append(adata, utcDate)
 		adata = append(adata, headerData...)
 		for ai, av := range asData {
