@@ -14,6 +14,7 @@ type Config struct {
 type CommonViewDeviceConfig struct {
 	SerialPath string
 	DevID      string
+	Mode       string
 }
 
 type SatelliteReceiverConfig struct {

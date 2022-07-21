@@ -17,6 +17,7 @@ var srcEnvs struct {
 	esEndpoints  string
 	esIndex      string
 	cvID         string
+	cvMode       string
 }
 var srcCmd = &cobra.Command{
 	Use:    "ntsc",
@@ -55,6 +56,9 @@ func init() {
 	srcCmd.Flags().StringVar(&srcEnvs.cvID,
 		"cv-id", "main",
 		"common view device id")
+	srcCmd.Flags().StringVar(&srcEnvs.cvMode,
+		"cv-mode", "GPS",
+		"common view mode")
 }
 
 func _src_run(cmd *cobra.Command, args []string) {
@@ -62,6 +66,7 @@ func _src_run(cmd *cobra.Command, args []string) {
 		CVConfig: &app.CommonViewDeviceConfig{
 			SerialPath: srcEnvs.cvSerialPath,
 			DevID:      srcEnvs.cvID,
+			Mode:       srcEnvs.cvMode,
 		},
 		ESConf: &app.ElasticSearchConfig{
 			Endpoints: srcEnvs.esEndpoints,
@@ -116,6 +121,16 @@ func _src_prerun(cmd *cobra.Command, args []string) {
 	}
 	if err = ccmd.ValidateStringVar(&srcEnvs.esIndex,
 		"es_index", true); err != nil {
+		logrus.WithField("prefix", "cmd.root").
+			Fatalf("check boot var failed: %s", err.Error())
+	}
+	if err = ccmd.ValidateStringVar(&srcEnvs.cvID,
+		"cv_id", true); err != nil {
+		logrus.WithField("prefix", "cmd.root").
+			Fatalf("check boot var failed: %s", err.Error())
+	}
+	if err = ccmd.ValidateStringVar(&srcEnvs.cvMode,
+		"cv_mode", true); err != nil {
 		logrus.WithField("prefix", "cmd.root").
 			Fatalf("check boot var failed: %s", err.Error())
 	}

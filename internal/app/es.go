@@ -13,6 +13,7 @@ import (
 
 // CVEsEntity cv es entity
 type CVEsEntity struct {
+	Mode      string    `json:"@Mode"`
 	Tnano     time.Time `json:"@tnano"`
 	Producer  string    `json:"@producer"`
 	Utcdate   time.Time `json:"@utcdate"`
@@ -47,10 +48,11 @@ type CVEsEntity struct {
 	Ck        string    `json:"ck"`
 }
 
-func genESData(raw [][]interface{}) []*CVEsEntity {
+func genESData(raw [][]interface{}, mode string) []*CVEsEntity {
 	var entities []*CVEsEntity
 	for _, data := range raw {
 		e := CVEsEntity{
+			Mode:      mode,
 			Tnano:     data[0].(time.Time),
 			Producer:  data[1].(string),
 			Utcdate:   data[2].(time.Time),
@@ -186,7 +188,7 @@ func (tsa *TimeSourceApp) process(raw []byte, data []string) error {
 		}
 		rawData = append(rawData, adata)
 	}
-	entities := genESData(rawData)
+	entities := genESData(rawData, tsa.conf.CVConfig.Mode)
 	if err := tsa.insertCVData(entities); err != nil {
 		return err
 	}
