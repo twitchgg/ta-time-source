@@ -111,7 +111,7 @@ func (tsa *TimeSourceApp) insertCVData(data []*CVEsEntity) error {
 	return nil
 }
 
-func (tsa *TimeSourceApp) process(raw []byte, data []string) error {
+func (tsa *TimeSourceApp) process(mode string, machineID string, raw []byte, data []string) error {
 	if len(data) == 0 {
 		return fmt.Errorf("no common view data")
 	}
@@ -159,7 +159,11 @@ func (tsa *TimeSourceApp) process(raw []byte, data []string) error {
 		idx = idx + cv.DefaultSatelliteDataSize
 		var adata []interface{}
 		adata = append(adata, tnano)
-		adata = append(adata, tsa.conf.CVConfig.DevID)
+		if machineID == "" {
+			adata = append(adata, tsa.conf.CVConfig.DevID)
+		} else {
+			adata = append(adata, machineID)
+		}
 		adata = append(adata, utcDate)
 		adata = append(adata, headerData...)
 		for ai, av := range asData {
@@ -188,12 +192,12 @@ func (tsa *TimeSourceApp) process(raw []byte, data []string) error {
 		}
 		rawData = append(rawData, adata)
 	}
-	entities := genESData(rawData, tsa.conf.CVConfig.Mode)
+	entities := genESData(rawData, mode)
 	if err := tsa.insertCVData(entities); err != nil {
 		return err
 	}
 	logrus.WithField("prefix", "cv.service.handler").
 		Debugf("machine [%s] [%d] satellite cv data success,time [%s]",
-			tsa.machineID, satelliteNum, writeDate)
+			machineID, satelliteNum, writeDate)
 	return nil
 }

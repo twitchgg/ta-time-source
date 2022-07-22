@@ -125,7 +125,7 @@ func (tsa *TimeSourceApp) Start() chan error {
 			for _, session := range tsa.userCVSessions {
 				session.dataChan <- raw
 			}
-			if err := tsa.process(raw, data); err != nil {
+			if err := tsa.process(tsa.conf.CVConfig.Mode, "", raw, data); err != nil {
 				logrus.WithField("prefix", "service.cv").
 					Errorf("failed to save common view data [%v]", err)
 			}
